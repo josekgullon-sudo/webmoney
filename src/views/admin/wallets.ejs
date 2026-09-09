@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+<h1>Carteras de los usuarios</h1>
+<section class="card">
+  <p class="muted">
+    Antes de aprobar una cartera, da de alta la direccion en Kraken
+    (<em>Funding → Withdraw → Add address</em>) y escribe aqui el nombre exacto que le hayas
+    puesto alli. Kraken solo permite retirar por API a direcciones de su lista blanca.
+  </p>
+</section>
+
+<% if (wallets.length === 0) { %>
+  <section class="card"><p class="muted">Ningun usuario ha registrado cartera todavia.</p></section>
+<% } %>
+
+<% wallets.forEach((w) => { %>
+  <section class="card">
+    <div class="card-head">
+      <h2><%= w.display_name || w.username %> <span class="badge <%= w.status %>"><%= w.status %></span></h2>
+      <small class="muted">Actualizada: <%= w.updated_at %></small>
+    </div>
+    <dl class="meta">
+      <dt>Cripto</dt><dd><%= w.asset %></dd>
+      <dt>Red</dt><dd><%= w.network %></dd>
+      <dt>Direccion</dt><dd class="mono break"><%= w.address %></dd>
+      <% if (w.memo) { %><dt>Memo</dt><dd class="mono"><%= w.memo %></dd><% } %>
+      <% if (w.kraken_key) { %><dt>Nombre en Kraken</dt><dd class="mono"><%= w.kraken_key %></dd><% } %>
+    </dl>
+    <form method="post" action="/admin/carteras/<%= w.user_id %>/revision" class="row">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label>Nombre de la direccion en Kraken
+        <input name="kraken_key" value="<%= w.kraken_key || '' %>" placeholder="ej. juan-btc">
+      </label>
+      <label>Nota (visible para el usuario si la rechazas)
+        <input name="note" maxlength="140" value="<%= w.note || '' %>">
+      </label>
+      <button class="btn primary" type="submit" name="decision" value="approve">Aprobar</button>
+      <button class="btn danger" type="submit" name="decision" value="reject">Rechazar</button>
+    </form>
+  </section>
+<% }) %>
+<%- include('../partials/footer') %>

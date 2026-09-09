@@ -1,0 +1,8 @@
+[Unit]
+Description=Actualizar la IP del subdominio de DuckDNS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/panel/deploy/duckdns-update.sh

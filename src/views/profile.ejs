@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+<h1>Mi perfil</h1>
+<section class="card narrow">
+  <% if (ok) { %><p class="alert ok">Guardado.</p><% } %>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <dl class="meta">
+    <dt>Usuario</dt><dd class="mono"><%= user.username %></dd>
+    <dt>Nombre</dt><dd><%= user.display_name || '—' %></dd>
+    <dt>Comision de la plataforma</dt><dd><%= user.fee_pct %> %</dd>
+  </dl>
+
+  <h2>Avisos por Telegram</h2>
+  <p class="muted">
+    Abre Telegram, escribe <code>/start</code> al bot del panel y pide tu chat ID al
+    administrador (o usa <code>@userinfobot</code>). Pegalo aqui para recibir cada cobro y cada pago.
+  </p>
+  <form method="post" action="/panel/perfil">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Chat ID de Telegram
+      <input name="telegram_chat_id" inputmode="numeric" maxlength="20"
+             value="<%= user.telegram_chat_id || '' %>" placeholder="123456789">
+    </label>
+    <button class="btn primary" type="submit">Guardar</button>
+  </form>
+  <form method="post" action="/panel/perfil/telegram-test" class="mt">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="btn" type="submit">Enviarme un aviso de prueba</button>
+  </form>
+
+  <h2>Seguridad</h2>
+  <a class="btn" href="/password">Cambiar mi contrasena</a>
+</section>
+<%- include('partials/footer') %>

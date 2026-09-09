@@ -1,0 +1,34 @@
+<%- include('partials/header') %>
+<h1>Pagos enviados a cartera</h1>
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Fecha</th><% if (isAdmin) { %><th>Usuario</th><% } %>
+        <th>Dia</th><th class="right">Importe</th><th class="right">Cripto</th>
+        <th>Cartera</th><th>Referencia</th><th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (payouts.length === 0) { %>
+        <tr><td colspan="8" class="muted">Todavia no hay pagos. Se envian automaticamente cada dia.</td></tr>
+      <% } %>
+      <% payouts.forEach((po) => { %>
+        <tr>
+          <td><%= po.created_at %></td>
+          <% if (isAdmin) { %><td><%= po.display_name || po.username %></td><% } %>
+          <td><%= po.period_date %></td>
+          <td class="right"><%= formatMoney(po.amount_cents, po.currency) %></td>
+          <td class="right"><%= po.volume ? po.volume + ' ' + po.asset : po.asset %></td>
+          <td class="mono ellipsis" title="<%= po.address %>"><%= po.address %></td>
+          <td class="mono"><%= po.kraken_refid || '—' %></td>
+          <td>
+            <span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span>
+            <% if (po.error) { %><br><small class="muted"><%= po.error %></small><% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('partials/footer') %>

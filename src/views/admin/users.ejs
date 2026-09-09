@@ -1,0 +1,84 @@
+<%- include('../partials/header') %>
+<h1>Usuarios</h1>
+
+<% if (created) { %>
+<section class="card credentials">
+  <h2>Credenciales generadas</h2>
+  <p class="muted">Anota estos datos y pasaselos al usuario. No se volveran a mostrar.</p>
+  <p class="mono big">Usuario: <%= created.username %></p>
+  <p class="mono big">Contrasena: <%= created.password %></p>
+  <p class="muted">Se le pedira cambiarla la primera vez que entre.</p>
+</section>
+<% } %>
+
+<section class="card">
+  <h2>Crear usuario</h2>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <form method="post" action="/admin/usuarios" class="row">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Usuario
+      <input name="username" required pattern="[A-Za-z0-9._\-]{3,32}" placeholder="juan.perez">
+    </label>
+    <label>Nombre visible
+      <input name="display_name" maxlength="64" placeholder="Juan Perez">
+    </label>
+    <label>Comision (%)
+      <input name="fee_pct" type="number" step="0.1" min="0" max="100" value="0">
+    </label>
+    <label>Contrasena (opcional)
+      <input name="password" minlength="10" placeholder="se genera sola" autocomplete="new-password">
+    </label>
+    <button class="btn primary" type="submit">Crear</button>
+  </form>
+</section>
+
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr><th>Usuario</th><th>Rol</th><th>Cartera</th><th class="right">Comision</th>
+      <th class="right">Pendiente</th><th class="right">Total</th><th>Ultimo acceso</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      <% users.forEach((u) => { %>
+        <tr class="<%= u.active ? '' : 'dim' %>">
+          <td>
+            <strong><%= u.display_name || u.username %></strong><br>
+            <small class="mono muted"><%= u.username %></small>
+          </td>
+          <td><span class="badge <%= u.role %>"><%= u.role %></span><%= u.active ? '' : ' (inactivo)' %></td>
+          <td>
+            <% if (u.role === 'admin') { %>—
+            <% } else if (!u.address) { %><span class="badge pending">sin cartera</span>
+            <% } else { %>
+              <span class="badge <%= u.wallet_status %>"><%= u.wallet_status %></span>
+              <small class="mono"><%= u.asset %></small>
+            <% } %>
+          </td>
+          <td class="right">
+            <form method="post" action="/admin/usuarios/<%= u.id %>/comision" class="inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input name="fee_pct" type="number" step="0.1" min="0" max="100" value="<%= u.fee_pct %>" class="tiny">
+              <button class="btn small" type="submit">%</button>
+            </form>
+          </td>
+          <td class="right"><%= formatMoney(u.pending_cents, currency) %></td>
+          <td class="right"><%= formatMoney(u.total_cents, currency) %></td>
+          <td><small><%= u.last_login_at || 'nunca' %></small></td>
+          <td class="actions">
+            <form method="post" action="/admin/usuarios/<%= u.id %>/password" class="inline">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn small" type="submit">Nueva contrasena</button>
+            </form>
+            <% if (u.id !== user.id) { %>
+              <form method="post" action="/admin/usuarios/<%= u.id %>/estado" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn small <%= u.active ? 'danger' : '' %>" type="submit"><%= u.active ? 'Desactivar' : 'Activar' %></button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('../partials/footer') %>

@@ -1,0 +1,7 @@
+<%- include('partials/header') %>
+<section class="card narrow">
+  <h1><%= title %></h1>
+  <p class="muted"><%= message %></p>
+  <a class="btn" href="<%= typeof back !== 'undefined' && back ? back : '/panel' %>">Volver</a>
+</section>
+<%- include('partials/footer') %>

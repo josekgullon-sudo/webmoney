@@ -1,0 +1,28 @@
+{
+  "name": "webmoney-panel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Panel automatico de cobros: Stripe -> panel -> Telegram -> payout cripto via Kraken",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "create-admin": "node scripts/create-admin.js",
+    "create-user": "node scripts/create-user.js",
+    "payout:run": "node scripts/run-payouts.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.5.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "node-cron": "^3.0.3",
+    "stripe": "^17.3.1"
+  }
+}

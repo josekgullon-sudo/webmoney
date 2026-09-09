@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+<h1>Mi cartera</h1>
+<section class="card narrow">
+  <p class="muted">
+    Indica la direccion donde quieres recibir el dinero que generes cada dia.
+    Cada vez que la cambies, el administrador debe volver a aprobarla antes del siguiente envio.
+  </p>
+  <% if (ok) { %><p class="alert ok">Cartera guardada. Queda pendiente de aprobacion.</p><% } %>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <% if (wallet && wallet.status) { %>
+    <p class="alert <%= wallet.status === 'approved' ? 'ok' : (wallet.status === 'rejected' ? 'error' : 'warn') %>">
+      Estado actual: <strong><%= wallet.status === 'approved' ? 'aprobada' : (wallet.status === 'rejected' ? 'rechazada' : 'pendiente de aprobacion') %></strong>
+      <%= wallet.note ? ' — ' + wallet.note : '' %>
+    </p>
+  <% } %>
+
+  <form method="post" action="/panel/cartera" id="wallet-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Criptomoneda
+      <select name="asset" id="asset-select" required>
+        <% assetCodes.forEach((code) => { %>
+          <option value="<%= code %>" <%= wallet && wallet.asset === code ? 'selected' : '' %>><%= assets[code].label %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Red
+      <select name="network" id="network-select" required
+              data-selected="<%= wallet && wallet.network ? wallet.network : '' %>"
+              data-networks="<%= encodeURIComponent(JSON.stringify(Object.fromEntries(assetCodes.map((c) => [c, assets[c].networks])))) %>">
+      </select>
+    </label>
+    <label>Direccion de la cartera
+      <input name="address" required maxlength="128" spellcheck="false" autocomplete="off"
+             value="<%= wallet && wallet.address ? wallet.address : '' %>"
+             placeholder="Pega aqui tu direccion">
+    </label>
+    <label>Memo / Tag (solo si tu red lo exige)
+      <input name="memo" maxlength="64" autocomplete="off" value="<%= wallet && wallet.memo ? wallet.memo : '' %>">
+    </label>
+    <p class="hint">
+      Revisa la direccion caracter por caracter: un envio de criptomonedas a una direccion
+      equivocada no se puede recuperar. Comprueba tambien que la red coincide con la de tu cartera.
+    </p>
+    <button class="btn primary" type="submit">Guardar cartera</button>
+  </form>
+</section>
+<%- include('partials/footer') %>

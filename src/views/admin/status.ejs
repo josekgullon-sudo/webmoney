@@ -1,0 +1,92 @@
+<%- include('../partials/header') %>
+<h1>Estado del sistema</h1>
+
+<section class="grid stats">
+  <div class="card stat">
+    <span class="label">Stripe</span>
+    <strong class="value <%= checks.stripe.ok && checks.stripe.webhook ? 'ok' : 'bad' %>">
+      <%= checks.stripe.ok ? (checks.stripe.webhook ? 'conectado' : 'sin webhook') : 'sin configurar' %>
+    </strong>
+    <span class="muted mono">POST <%= checks.appUrl %>/webhooks/stripe</span>
+  </div>
+  <div class="card stat">
+    <span class="label">Telegram</span>
+    <strong class="value <%= checks.telegram.ok ? 'ok' : 'bad' %>"><%= checks.telegram.ok ? 'conectado' : 'sin configurar' %></strong>
+    <span class="muted"><%= checks.telegram.admin ? 'chat de admin configurado' : 'falta TELEGRAM_ADMIN_CHAT_ID' %></span>
+  </div>
+  <div class="card stat">
+    <span class="label">Kraken</span>
+    <strong class="value <%= checks.kraken.ok ? 'ok' : 'bad' %>"><%= checks.kraken.mode %></strong>
+    <span class="muted"><%= checks.kraken.error ? checks.kraken.error : (checks.kraken.simulated ? 'modo simulacion' : 'credenciales validas') %></span>
+  </div>
+  <div class="card stat">
+    <span class="label">Pagos automaticos</span>
+    <strong class="value <%= checks.payouts.autoEnabled ? 'ok' : 'bad' %>"><%= checks.payouts.autoEnabled ? 'activos' : 'desactivados' %></strong>
+    <span class="muted mono"><%= checks.payouts.cron %> · <%= checks.payouts.timezone %></span>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Comprobaciones</h2>
+    <form method="post" action="/admin/estado/telegram-test" class="inline">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn small" type="submit">Probar Telegram</button>
+    </form>
+  </div>
+  <% if (unassigned > 0) { %>
+    <p class="alert warn"><%= unassigned %> cobro(s) sin usuario asignado. <a href="/panel/cobros">Asignalos</a> para que entren en el pago diario.</p>
+  <% } else { %>
+    <p class="muted">Todos los cobros recientes estan asignados a un usuario.</p>
+  <% } %>
+</section>
+
+<section class="card">
+  <h2>Ultimos eventos de Stripe</h2>
+  <table class="table">
+    <thead><tr><th>Recibido</th><th>Tipo</th><th>ID</th></tr></thead>
+    <tbody>
+      <% if (events.length === 0) { %><tr><td colspan="3" class="muted">Aun no ha llegado ningun webhook.</td></tr><% } %>
+      <% events.forEach((e) => { %>
+        <tr><td><%= e.processed_at %></td><td><%= e.type %></td><td class="mono ellipsis"><%= e.stripe_event_id %></td></tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Avisos de Telegram</h2>
+  <table class="table">
+    <thead><tr><th>Fecha</th><th>Destino</th><th>Estado</th><th>Detalle</th></tr></thead>
+    <tbody>
+      <% if (notifications.length === 0) { %><tr><td colspan="4" class="muted">Sin avisos enviados.</td></tr><% } %>
+      <% notifications.forEach((n) => { %>
+        <tr>
+          <td><%= n.created_at %></td>
+          <td class="mono"><%= n.target || '—' %></td>
+          <td><span class="badge <%= n.status === 'sent' ? 'approved' : (n.status === 'skipped' ? 'pending' : 'failed') %>"><%= n.status %></span></td>
+          <td><small class="muted"><%= n.error || n.text.split('\n')[0] %></small></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Registro de actividad</h2>
+  <table class="table">
+    <thead><tr><th>Fecha</th><th>Usuario</th><th>Accion</th><th>Entidad</th><th>IP</th></tr></thead>
+    <tbody>
+      <% audits.forEach((a) => { %>
+        <tr>
+          <td><%= a.created_at %></td>
+          <td><%= a.username || '—' %></td>
+          <td class="mono"><%= a.action %></td>
+          <td class="mono"><%= a.entity || '' %> <%= a.entity_id || '' %></td>
+          <td class="mono"><%= a.ip || '—' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('../partials/footer') %>

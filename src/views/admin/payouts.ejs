@@ -1,0 +1,67 @@
+<%- include('../partials/header') %>
+<h1>Enviar pagos</h1>
+
+<section class="card">
+  <p>
+    Modo de Kraken: <span class="badge <%= krakenMode === 'live' ? 'approved' : 'pending' %>"><%= krakenMode %></span>
+    <% if (krakenMode !== 'live') { %>
+      <span class="muted">— los envios se registran pero no mueven dinero real. Pon <code>KRAKEN_MODE=live</code> para activarlos.</span>
+    <% } %>
+  </p>
+  <p class="muted">Minimo por envio: <%= formatMoney(minPayout, currency) %>. El envio automatico se hace cada dia segun <code>PAYOUT_CRON</code>.</p>
+  <form method="post" action="/admin/pagos/ejecutar">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button class="btn primary" type="submit">Ejecutar ahora la tanda diaria</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Saldos pendientes</h2>
+  <table class="table">
+    <thead><tr><th>Usuario</th><th>Cartera</th><th class="right">Pendiente</th><th>Accion</th></tr></thead>
+    <tbody>
+      <% users.forEach((u) => { %>
+        <tr>
+          <td><%= u.display_name || u.username %></td>
+          <td>
+            <% if (!u.address) { %><span class="badge pending">sin cartera</span>
+            <% } else { %><span class="badge <%= u.wallet_status %>"><%= u.wallet_status %></span> <small class="mono"><%= u.asset %> · <%= u.network %></small><% } %>
+          </td>
+          <td class="right"><%= formatMoney(u.pending_cents, currency) %></td>
+          <td>
+            <% if (u.wallet_status === 'approved' && u.pending_cents > 0) { %>
+              <form method="post" action="/admin/pagos/usuario/<%= u.id %>" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn small" type="submit">Pagar ahora</button>
+              </form>
+            <% } else { %><span class="muted">—</span><% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Historial</h2>
+  <table class="table">
+    <thead><tr><th>Fecha</th><th>Usuario</th><th class="right">Importe</th><th class="right">Cripto</th><th>Referencia</th><th>Estado</th></tr></thead>
+    <tbody>
+      <% if (payouts.length === 0) { %><tr><td colspan="6" class="muted">Sin pagos todavia.</td></tr><% } %>
+      <% payouts.forEach((po) => { %>
+        <tr>
+          <td><%= po.created_at %></td>
+          <td><%= po.display_name || po.username %></td>
+          <td class="right"><%= formatMoney(po.amount_cents, po.currency) %></td>
+          <td class="right"><%= po.volume ? po.volume + ' ' + po.asset : po.asset %></td>
+          <td class="mono"><%= po.kraken_refid || '—' %></td>
+          <td>
+            <span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span>
+            <% if (po.error) { %><br><small class="muted"><%= po.error %></small><% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+<%- include('../partials/footer') %>

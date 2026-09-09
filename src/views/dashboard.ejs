@@ -1,0 +1,105 @@
+<%- include('partials/header') %>
+<%
+  const maxNet = series.reduce((m, d) => Math.max(m, d.net_cents), 0) || 1;
+  const isAdmin = user.role === 'admin';
+%>
+<h1>Resumen<span class="live" id="live-dot" title="Conectado en directo"></span></h1>
+
+<% if (!isAdmin) { %>
+  <% if (!wallet) { %>
+    <p class="alert warn">Todavia no has indicado tu cartera. <a href="/panel/cartera">Anadela aqui</a> para poder cobrar.</p>
+  <% } else if (wallet.status === 'pending') { %>
+    <p class="alert warn">Tu cartera <strong><%= wallet.asset %></strong> esta pendiente de aprobacion por el administrador.</p>
+  <% } else if (wallet.status === 'rejected') { %>
+    <p class="alert error">Tu cartera ha sido rechazada<%= wallet.note ? ': ' + wallet.note : '.' %> <a href="/panel/cartera">Corrigela</a>.</p>
+  <% } %>
+<% } %>
+
+<section class="grid stats">
+  <div class="card stat">
+    <span class="label">Cobrado hoy</span>
+    <strong class="value" id="stat-today"><%= formatMoney(stats.today_gross, currency) %></strong>
+    <span class="muted"><span id="stat-today-count"><%= stats.today_count %></span> cobros</span>
+  </div>
+  <div class="card stat">
+    <span class="label"><%= isAdmin ? 'Neto de usuarios hoy' : 'Tu neto de hoy' %></span>
+    <strong class="value" id="stat-today-net"><%= formatMoney(stats.today_net, currency) %></strong>
+  </div>
+  <div class="card stat">
+    <span class="label">Pendiente de enviar a cartera</span>
+    <strong class="value accent" id="stat-pending"><%= formatMoney(pending.cents, currency) %></strong>
+    <span class="muted">Minimo por envio: <%= formatMoney(minPayout, currency) %></span>
+  </div>
+  <div class="card stat">
+    <span class="label">Este mes</span>
+    <strong class="value" id="stat-month"><%= formatMoney(stats.month_net, currency) %></strong>
+    <span class="muted"><%= stats.total_count %> cobros en total</span>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Ultimos 14 dias</h2>
+  <% if (series.length === 0) { %>
+    <p class="muted">Aun no hay cobros registrados.</p>
+  <% } else { %>
+    <ul class="bars">
+      <% series.slice().reverse().forEach((d) => { %>
+        <li>
+          <span class="bar-day"><%= d.day.slice(5) %></span>
+          <span class="bar-track"><span class="bar-fill" data-pct="<%= Math.round((d.net_cents / maxNet) * 100) %>"></span></span>
+          <span class="bar-value"><%= formatMoney(d.net_cents, currency) %></span>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Ultimos cobros</h2>
+    <a href="/panel/cobros">Ver todos</a>
+  </div>
+  <table class="table" id="recent-payments">
+    <thead><tr><th>Fecha</th><% if (isAdmin) { %><th>Usuario</th><% } %><th>Concepto</th><th class="right">Importe</th><th class="right">Neto</th><th>Estado</th></tr></thead>
+    <tbody>
+      <% if (payments.length === 0) { %>
+        <tr><td colspan="<%= isAdmin ? 6 : 5 %>" class="muted">Sin cobros todavia. Cuando entre uno por Stripe aparecera aqui al instante.</td></tr>
+      <% } %>
+      <% payments.forEach((p) => { %>
+        <tr>
+          <td><%= p.paid_at %></td>
+          <% if (isAdmin) { %><td><%= p.display_name || p.username || '—' %></td><% } %>
+          <td><%= p.description || '—' %></td>
+          <td class="right"><%= formatMoney(p.gross_cents, p.currency) %></td>
+          <td class="right"><%= formatMoney(p.net_cents, p.currency) %></td>
+          <td><span class="badge <%= p.status %>"><%= p.status %></span></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Ultimos envios a cartera</h2>
+    <a href="/panel/pagos">Ver todos</a>
+  </div>
+  <% if (payouts.length === 0) { %>
+    <p class="muted">Todavia no se ha enviado ningun pago.</p>
+  <% } else { %>
+    <table class="table">
+      <thead><tr><th>Fecha</th><th>Importe</th><th>Cripto</th><th>Estado</th></tr></thead>
+      <tbody>
+        <% payouts.forEach((po) => { %>
+          <tr>
+            <td><%= po.created_at %></td>
+            <td><%= formatMoney(po.amount_cents, po.currency) %></td>
+            <td><%= po.volume ? po.volume + ' ' + po.asset : po.asset %></td>
+            <td><span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

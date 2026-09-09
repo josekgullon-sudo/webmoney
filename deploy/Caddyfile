@@ -1,0 +1,34 @@
+# Caddy consigue y renueva solo el certificado HTTPS de Let's Encrypt.
+# Requisito: los puertos 80 y 443 deben llegar a esta maquina
+# (en el router: redireccion de puertos 80 y 443 hacia la IP local del servidor).
+#
+# Sustituye TU-SUBDOMINIO por el que hayas creado en duckdns.org.
+
+TU-SUBDOMINIO.duckdns.org {
+	# Se comprime todo menos el flujo de eventos en directo (text/event-stream):
+	# comprimirlo haria que el panel tardase en enterarse de los cobros.
+	encode zstd gzip {
+		match {
+			header Content-Type text/html*
+			header Content-Type text/css*
+			header Content-Type text/plain*
+			header Content-Type application/json*
+			header Content-Type application/javascript*
+			header Content-Type text/javascript*
+		}
+	}
+
+	# Correo para los avisos de caducidad del certificado.
+	tls tu-correo@ejemplo.com
+
+	reverse_proxy 127.0.0.1:3000 {
+		# Imprescindible: el panel se actualiza en directo con SSE y no debe
+		# quedarse en el bufer del proxy.
+		flush_interval -1
+	}
+
+	log {
+		output file /var/log/caddy/panel.log
+		format json
+	}
+}

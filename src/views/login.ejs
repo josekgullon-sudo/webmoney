@@ -1,0 +1,18 @@
+<%- include('partials/header') %>
+<section class="card login">
+  <h1>💶 <%= appName %></h1>
+  <p class="muted">Entra con el usuario y la contrasena que te ha dado el administrador.</p>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <form method="post" action="/login" autocomplete="on">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="next" value="<%= next %>">
+    <label>Usuario
+      <input name="username" required autofocus autocomplete="username" maxlength="32">
+    </label>
+    <label>Contrasena
+      <input name="password" type="password" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn primary">Entrar</button>
+  </form>
+</section>
+<%- include('partials/footer') %>

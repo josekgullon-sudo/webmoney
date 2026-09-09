@@ -1,0 +1,73 @@
+<%- include('partials/header') %>
+<h1>Cobros</h1>
+
+<% if (isAdmin) { %>
+<section class="card">
+  <h2>Cobro de prueba</h2>
+  <p class="muted">Crea un cobro ficticio para comprobar que el panel y el aviso de Telegram funcionan.</p>
+  <form method="post" action="/admin/cobros/prueba" class="row">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Importe
+      <input name="amount" type="number" step="0.01" min="0.01" value="25.00" required>
+    </label>
+    <label>Usuario
+      <select name="user_id">
+        <option value="">Sin asignar</option>
+        <% users.forEach((u) => { %><option value="<%= u.id %>"><%= u.display_name || u.username %></option><% }) %>
+      </select>
+    </label>
+    <button class="btn" type="submit">Crear cobro de prueba</button>
+  </form>
+</section>
+<% } %>
+
+<section class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <% if (isAdmin) { %><th>Usuario</th><% } %>
+        <th>Concepto</th><th>Cliente</th>
+        <th class="right">Importe</th><th class="right">Comision</th><th class="right">Neto</th>
+        <th>Estado</th><th>Pagado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (payments.length === 0) { %>
+        <tr><td colspan="9" class="muted">No hay cobros en esta pagina.</td></tr>
+      <% } %>
+      <% payments.forEach((p) => { %>
+        <tr>
+          <td><%= p.paid_at %></td>
+          <% if (isAdmin) { %>
+            <td>
+              <form method="post" action="/admin/cobros/<%= p.id %>/asignar" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <select name="user_id" <%= p.payout_id ? 'disabled' : '' %>>
+                  <option value="">Sin asignar</option>
+                  <% users.forEach((u) => { %>
+                    <option value="<%= u.id %>" <%= p.user_id === u.id ? 'selected' : '' %>><%= u.display_name || u.username %></option>
+                  <% }) %>
+                </select>
+                <% if (!p.payout_id) { %><button class="btn small" type="submit">Guardar</button><% } %>
+              </form>
+            </td>
+          <% } %>
+          <td><%= p.description || '—' %></td>
+          <td><%= p.customer_email || '—' %></td>
+          <td class="right"><%= formatMoney(p.gross_cents, p.currency) %></td>
+          <td class="right"><%= formatMoney(p.fee_cents, p.currency) %></td>
+          <td class="right"><%= formatMoney(p.net_cents, p.currency) %></td>
+          <td><span class="badge <%= p.status %>"><%= p.status %></span></td>
+          <td><%= p.payout_id ? 'si (#' + p.payout_id + ')' : 'pendiente' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <nav class="pager">
+    <% if (page > 1) { %><a class="btn small" href="/panel/cobros?page=<%= page - 1 %>">← Anterior</a><% } %>
+    <span class="muted">Pagina <%= page %></span>
+    <% if (payments.length === perPage) { %><a class="btn small" href="/panel/cobros?page=<%= page + 1 %>">Siguiente →</a><% } %>
+  </nav>
+</section>
+<%- include('partials/footer') %>

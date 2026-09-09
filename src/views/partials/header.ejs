@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= title %> · <%= appName %></title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>💶</text></svg>">
+</head>
+<body>
+<% if (user) { %>
+<header class="topbar">
+  <a class="brand" href="/panel">💶 <%= appName %></a>
+  <nav>
+    <a href="/panel" class="<%= currentPath === '/panel' ? 'active' : '' %>">Resumen</a>
+    <a href="/panel/cobros" class="<%= currentPath.startsWith('/panel/cobros') ? 'active' : '' %>">Cobros</a>
+    <a href="/panel/pagos" class="<%= currentPath.startsWith('/panel/pagos') ? 'active' : '' %>">Pagos</a>
+    <a href="/panel/cartera" class="<%= currentPath.startsWith('/panel/cartera') ? 'active' : '' %>">Mi cartera</a>
+    <% if (user.role === 'admin') { %>
+      <span class="sep"></span>
+      <a href="/admin" class="<%= currentPath === '/admin' ? 'active' : '' %>">Usuarios</a>
+      <a href="/admin/carteras" class="<%= currentPath.startsWith('/admin/carteras') ? 'active' : '' %>">Carteras</a>
+      <a href="/admin/pagos" class="<%= currentPath.startsWith('/admin/pagos') ? 'active' : '' %>">Enviar pagos</a>
+      <a href="/admin/estado" class="<%= currentPath.startsWith('/admin/estado') ? 'active' : '' %>">Estado</a>
+    <% } %>
+  </nav>
+  <div class="user-menu">
+    <a href="/panel/perfil"><%= user.display_name || user.username %></a>
+    <form method="post" action="/logout">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="link">Salir</button>
+    </form>
+  </div>
+</header>
+<% } %>
+<main class="<%= user ? 'app' : 'centered' %>">
