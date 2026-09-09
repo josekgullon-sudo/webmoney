@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import config from './config.js';
 import logger from './lib/logger.js';
 import { formatMoney } from './lib/money.js';
+import { etiqueta } from './lib/labels.js';
 import db from './lib/db.js';
 import { SqliteSessionStore } from './lib/session-store.js';
 import { csrfMiddleware } from './lib/csrf.js';
@@ -77,6 +78,7 @@ app.use((req, res, next) => {
   res.locals.appUrl = config.appUrl;
   res.locals.currency = config.currency;
   res.locals.formatMoney = formatMoney;
+  res.locals.etiqueta = etiqueta;
   res.locals.csrfToken = '';
   res.locals.user = null;
   res.locals.currentPath = req.path;

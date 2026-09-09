@@ -15,7 +15,7 @@
 <% wallets.forEach((w) => { %>
   <section class="card">
     <div class="card-head">
-      <h2><%= w.display_name || w.username %> <span class="badge <%= w.status %>"><%= w.status %></span></h2>
+      <h2><%= w.display_name || w.username %> <span class="badge <%= w.status %>"><%= etiqueta(w.status) %></span></h2>
       <small class="muted">Actualizada: <%= w.updated_at %></small>
     </div>
     <dl class="meta">

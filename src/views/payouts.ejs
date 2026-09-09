@@ -23,7 +23,7 @@
           <td class="mono ellipsis" title="<%= po.address %>"><%= po.address %></td>
           <td class="mono"><%= po.kraken_refid || '—' %></td>
           <td>
-            <span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span>
+            <span class="badge <%= po.status %>"><%= etiqueta(po.status) %><%= po.simulated ? ' (sim)' : '' %></span>
             <% if (po.error) { %><br><small class="muted"><%= po.error %></small><% } %>
           </td>
         </tr>

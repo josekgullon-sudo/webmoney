@@ -66,6 +66,7 @@ main.centered { min-height: 100dvh; display: grid; place-items: center; padding:
 .grid.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
 .stat { display: flex; flex-direction: column; gap: .3rem; margin: 0; }
 .stat .label { color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+.stat .muted { overflow-wrap: anywhere; }
 .stat .value { font-size: 1.6rem; font-weight: 700; }
 .stat .value.accent, .stat .value.ok { color: var(--accent); }
 .stat .value.bad { color: var(--danger); }

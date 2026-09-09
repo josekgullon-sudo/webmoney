@@ -3,6 +3,7 @@ import config from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import panelEvents from '../lib/events.js';
 import { formatMoney } from '../lib/money.js';
+import { etiqueta } from '../lib/labels.js';
 import { listPayments, pendingBalance, userStats } from '../services/payments.js';
 import db from '../lib/db.js';
 
@@ -64,6 +65,7 @@ router.get('/api/resumen', requireAuth, (req, res) => {
       amount: formatMoney(p.gross_cents, p.currency),
       net: formatMoney(p.net_cents, p.currency),
       status: p.status,
+      statusText: etiqueta(p.status),
       description: p.description,
       user: p.display_name || p.username || null,
       paidAt: p.paid_at,

@@ -45,12 +45,12 @@
             <strong><%= u.display_name || u.username %></strong><br>
             <small class="mono muted"><%= u.username %></small>
           </td>
-          <td><span class="badge <%= u.role %>"><%= u.role %></span><%= u.active ? '' : ' (inactivo)' %></td>
+          <td><span class="badge <%= u.role %>"><%= etiqueta(u.role) %></span><%= u.active ? '' : ' (inactivo)' %></td>
           <td>
             <% if (u.role === 'admin') { %>—
             <% } else if (!u.address) { %><span class="badge pending">sin cartera</span>
             <% } else { %>
-              <span class="badge <%= u.wallet_status %>"><%= u.wallet_status %></span>
+              <span class="badge <%= u.wallet_status %>"><%= etiqueta(u.wallet_status) %></span>
               <small class="mono"><%= u.asset %></small>
             <% } %>
           </td>

@@ -3,7 +3,7 @@
 
 <section class="card">
   <p>
-    Modo de Kraken: <span class="badge <%= krakenMode === 'live' ? 'approved' : 'pending' %>"><%= krakenMode %></span>
+    Modo de Kraken: <span class="badge <%= krakenMode === 'live' ? 'approved' : 'pending' %>"><%= krakenMode === 'live' ? 'real' : 'simulacion' %></span>
     <% if (krakenMode !== 'live') { %>
       <span class="muted">— los envios se registran pero no mueven dinero real. Pon <code>KRAKEN_MODE=live</code> para activarlos.</span>
     <% } %>
@@ -25,7 +25,7 @@
           <td><%= u.display_name || u.username %></td>
           <td>
             <% if (!u.address) { %><span class="badge pending">sin cartera</span>
-            <% } else { %><span class="badge <%= u.wallet_status %>"><%= u.wallet_status %></span> <small class="mono"><%= u.asset %> · <%= u.network %></small><% } %>
+            <% } else { %><span class="badge <%= u.wallet_status %>"><%= etiqueta(u.wallet_status) %></span> <small class="mono"><%= u.asset %> · <%= u.network %></small><% } %>
           </td>
           <td class="right"><%= formatMoney(u.pending_cents, currency) %></td>
           <td>
@@ -56,7 +56,7 @@
           <td class="right"><%= po.volume ? po.volume + ' ' + po.asset : po.asset %></td>
           <td class="mono"><%= po.kraken_refid || '—' %></td>
           <td>
-            <span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span>
+            <span class="badge <%= po.status %>"><%= etiqueta(po.status) %><%= po.simulated ? ' (sim)' : '' %></span>
             <% if (po.error) { %><br><small class="muted"><%= po.error %></small><% } %>
           </td>
         </tr>

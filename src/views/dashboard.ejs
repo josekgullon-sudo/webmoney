@@ -72,7 +72,7 @@
           <td><%= p.description || '—' %></td>
           <td class="right"><%= formatMoney(p.gross_cents, p.currency) %></td>
           <td class="right"><%= formatMoney(p.net_cents, p.currency) %></td>
-          <td><span class="badge <%= p.status %>"><%= p.status %></span></td>
+          <td><span class="badge <%= p.status %>"><%= etiqueta(p.status) %></span></td>
         </tr>
       <% }) %>
     </tbody>
@@ -95,7 +95,7 @@
             <td><%= po.created_at %></td>
             <td><%= formatMoney(po.amount_cents, po.currency) %></td>
             <td><%= po.volume ? po.volume + ' ' + po.asset : po.asset %></td>
-            <td><span class="badge <%= po.status %>"><%= po.status %><%= po.simulated ? ' (sim)' : '' %></span></td>
+            <td><span class="badge <%= po.status %>"><%= etiqueta(po.status) %><%= po.simulated ? ' (sim)' : '' %></span></td>
           </tr>
         <% }) %>
       </tbody>

@@ -16,7 +16,7 @@
   </div>
   <div class="card stat">
     <span class="label">Kraken</span>
-    <strong class="value <%= checks.kraken.ok ? 'ok' : 'bad' %>"><%= checks.kraken.mode %></strong>
+    <strong class="value <%= checks.kraken.ok ? 'ok' : 'bad' %>"><%= checks.kraken.mode === 'live' ? 'real' : 'simulacion' %></strong>
     <span class="muted"><%= checks.kraken.error ? checks.kraken.error : (checks.kraken.simulated ? 'modo simulacion' : 'credenciales validas') %></span>
   </div>
   <div class="card stat">
@@ -64,7 +64,7 @@
         <tr>
           <td><%= n.created_at %></td>
           <td class="mono"><%= n.target || '—' %></td>
-          <td><span class="badge <%= n.status === 'sent' ? 'approved' : (n.status === 'skipped' ? 'pending' : 'failed') %>"><%= n.status %></span></td>
+          <td><span class="badge <%= n.status === 'sent' ? 'approved' : (n.status === 'skipped' ? 'pending' : 'failed') %>"><%= etiqueta(n.status) %></span></td>
           <td><small class="muted"><%= n.error || n.text.split('\n')[0] %></small></td>
         </tr>
       <% }) %>

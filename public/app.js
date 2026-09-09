@@ -85,7 +85,7 @@ function renderRecent(payments) {
       const status = document.createElement('td');
       const badge = document.createElement('span');
       badge.className = `badge ${p.status}`;
-      badge.textContent = p.status;
+      badge.textContent = p.statusText || p.status;
       status.append(badge);
       tr.append(status);
       return tr;

@@ -42,6 +42,48 @@ Cliente paga ──▶ Stripe ──webhook──▶ Panel ──▶ aviso de Te
 Empieza siempre con `KRAKEN_MODE=simulate`: el panel recorre todo el proceso y lo registra,
 pero no mueve dinero real. Cuando lo veas funcionar, cámbialo a `live`.
 
+## Probarlo sin conectar nada
+
+La forma más rápida de verlo funcionando: no hace falta cuenta de Stripe, ni bot de Telegram,
+ni claves de Kraken.
+
+```bash
+npm install
+npm run demo -- --yes     # rellena el panel con datos de ejemplo
+npm start                 # http://localhost:3000
+```
+
+Entra con **admin / demo-panel-2026** (o con **juan / demo-panel-2026** para ver la pantalla
+tal y como la ve un usuario normal). Tendrás 35 cobros repartidos en 14 días, tres usuarios,
+carteras en distintos estados y dos pagos ya enviados en modo simulación.
+
+Dentro puedes probar el circuito completo:
+
+- **Cobros → Cobro de prueba** crea un cobro y lo verás aparecer en el resumen **sin recargar
+  la página** (es lo mismo que ocurre cuando entra un pago real de Stripe).
+- **Carteras** aprueba la cartera pendiente de Lucía.
+- **Enviar pagos → Pagar ahora** ejecuta un envío completo en modo simulación: calcula la
+  cantidad de criptomoneda al precio de mercado y registra la retirada, sin mover dinero.
+- Si pones el token del bot en `TELEGRAM_BOT_TOKEN` y tu chat ID en `TELEGRAM_ADMIN_CHAT_ID`,
+  esos mismos avisos te llegarán al móvil.
+
+`npm run demo` se niega a tocar una base de datos que ya tenga cobros reales.
+
+### Probar los webhooks de Stripe de verdad, en local
+
+Con la [CLI de Stripe](https://stripe.com/docs/stripe-cli) no necesitas ni dominio ni
+despliegue: reenvía los eventos de tu cuenta de pruebas a tu ordenador.
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/webhooks/stripe
+# copia el whsec_... que imprime a STRIPE_WEBHOOK_SECRET y reinicia el panel
+
+stripe trigger payment_intent.succeeded
+```
+
+El cobro aparecerá en el panel igual que lo hará en producción.
+
 ## Puesta en marcha en tu ordenador
 
 Necesitas Node.js 20 o superior.
@@ -219,6 +261,7 @@ npm start                                          # arrancar el panel
 npm test                                           # pruebas automáticas
 npm run create-admin -- --user admin               # crear o reestablecer el administrador
 npm run create-user  -- --user juan --fee 10       # crear un usuario desde consola
+npm run demo -- --yes                              # rellenar el panel con datos de ejemplo
 npm run payout:run                                 # lanzar la tanda de pagos a mano
 ```
 

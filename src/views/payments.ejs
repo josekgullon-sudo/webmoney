@@ -58,7 +58,7 @@
           <td class="right"><%= formatMoney(p.gross_cents, p.currency) %></td>
           <td class="right"><%= formatMoney(p.fee_cents, p.currency) %></td>
           <td class="right"><%= formatMoney(p.net_cents, p.currency) %></td>
-          <td><span class="badge <%= p.status %>"><%= p.status %></span></td>
+          <td><span class="badge <%= p.status %>"><%= etiqueta(p.status) %></span></td>
           <td><%= p.payout_id ? 'si (#' + p.payout_id + ')' : 'pendiente' %></td>
         </tr>
       <% }) %>
