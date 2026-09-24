@@ -74,6 +74,20 @@ if [ -n "$DOMINIO" ]; then
   fi
 fi
 
+titulo "Cortafuegos"
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -qi 'Status: active'; then
+  REGLAS="$(ufw status 2>/dev/null)"
+  for PUERTO_WEB in 80 443; do
+    if echo "$REGLAS" | grep -qE "(^|[[:space:]])$PUERTO_WEB(/tcp)?([[:space:]]|$)"; then
+      ok "Puerto $PUERTO_WEB abierto en ufw"
+    else
+      mal "Puerto $PUERTO_WEB cerrado en ufw (abrelo con: sudo ufw allow $PUERTO_WEB/tcp)"
+    fi
+  done
+else
+  aviso "ufw no esta activo. Si tu proveedor de VPS tiene cortafuegos propio, abre ahi los puertos 80 y 443"
+fi
+
 titulo "Integraciones"
 if definida STRIPE_SECRET_KEY; then ok "Clave de Stripe configurada"; else mal "Falta STRIPE_SECRET_KEY en el .env"; fi
 if definida STRIPE_WEBHOOK_SECRET; then
