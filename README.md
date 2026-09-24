@@ -106,6 +106,43 @@ Verás aparecer el cobro en el panel y llegar el aviso a Telegram.
 apuntando a tu IP. Con eso más [Caddy](https://caddyserver.com/) tienes HTTPS automático, que es
 justo lo que Stripe exige para enviar los webhooks.
 
+### Instalación guiada (recomendado)
+
+Si tu servidor es Debian o Ubuntu con systemd, el instalador hace todos los pasos de una vez:
+instala Node y Caddy, crea el usuario del sistema, genera el `.env` con su clave de sesión,
+programa la actualización de IP de DuckDNS, arranca el panel como servicio, configura el HTTPS
+y crea tu administrador.
+
+```bash
+sudo apt install -y git
+git clone <url-de-este-repositorio> /opt/panel
+cd /opt/panel
+sudo ./deploy/instalar.sh
+```
+
+Te preguntará tu subdominio y token de DuckDNS, un correo para el certificado y, si ya las
+tienes, las claves de Stripe y Telegram (lo que dejes en blanco lo puedes añadir después al
+`.env`). Puedes volver a ejecutarlo cuantas veces quieras: no pisa tu `.env` ni tu base de datos.
+
+Antes de lanzarlo, asegúrate de haber hecho dos cosas:
+
+1. Crear el subdominio en [duckdns.org](https://www.duckdns.org/) y copiar el *token*.
+2. Redirigir los puertos **80** y **443** del router a la IP local del servidor (o abrirlos en
+   el cortafuegos del VPS). Los dos hacen falta: el 80 para que Let's Encrypt valide el
+   dominio y el 443 para el panel.
+
+Cuando termine, comprueba en cualquier momento cómo está todo:
+
+```bash
+sudo /opt/panel/deploy/comprobar.sh
+```
+
+Te dice, una por una, si el panel responde, si Caddy está levantado, si el dominio apunta a
+este servidor, si el certificado funciona, si el webhook de Stripe recibe peticiones y qué
+falta por configurar.
+
+### Instalación paso a paso (si prefieres hacerlo a mano)
+
 **1. Crea el subdominio.** Entra en duckdns.org, inicia sesión, crea tu subdominio y copia el *token*.
 
 **2. Abre los puertos.** En tu router, redirige los puertos **80** y **443** a la IP local del
@@ -293,7 +330,7 @@ src/
   views/               plantillas de las pantallas
 public/                estilos y JavaScript del navegador
 scripts/               utilidades de consola
-deploy/                DuckDNS, systemd y Caddy
+deploy/                instalador, diagnostico, DuckDNS, systemd y Caddy
 tests/                 pruebas automáticas
 ```
 
