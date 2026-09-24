@@ -39,19 +39,31 @@ echo "  Destino:  $DESTINO"
 # ─── Datos de configuracion ───────────────────────────────────────────────────
 paso "Datos de configuracion"
 
+# Quita espacios y tabuladores de los extremos: al pegar una clave es facil
+# que se cuele uno, y eso bastaba para dejar la configuracion invalida.
+limpiar() {
+  local v="$1"
+  v="${v#"${v%%[![:space:]]*}"}"
+  v="${v%"${v##*[![:space:]]}"}"
+  printf '%s' "$v"
+}
+
 preguntar() {            # preguntar VARIABLE "Texto" ["valor por defecto"]
-  local nombre="$1" texto="$2" defecto="${3:-}" valor="${!1:-}"
-  if [ -n "$valor" ]; then echo "  $texto: (ya definido)"; return; fi
-  if [ -n "$defecto" ]; then read -r -p "  $texto [$defecto]: " valor; valor="${valor:-$defecto}"
-  else read -r -p "  $texto: " valor; fi
-  printf -v "$nombre" '%s' "$valor"
+  local nombre="$1" texto="$2" defecto="${3:-}" valor
+  valor="$(limpiar "${!1:-}")"
+  if [ -n "$valor" ]; then echo "  $texto: (ya definido)"; printf -v "$nombre" '%s' "$valor"; return; fi
+  if [ -n "$defecto" ]; then read -r -p "  $texto [$defecto]: " valor || true
+  else read -r -p "  $texto: " valor || true; fi
+  valor="$(limpiar "${valor:-}")"
+  printf -v "$nombre" '%s' "${valor:-$defecto}"
 }
 
 preguntar_secreto() {    # igual, pero sin mostrar lo que se teclea
-  local nombre="$1" texto="$2" valor="${!1:-}"
-  if [ -n "$valor" ]; then echo "  $texto: (ya definido)"; return; fi
-  read -r -s -p "  $texto: " valor; echo
-  printf -v "$nombre" '%s' "$valor"
+  local nombre="$1" texto="$2" valor
+  valor="$(limpiar "${!1:-}")"
+  if [ -n "$valor" ]; then echo "  $texto: (ya definido)"; printf -v "$nombre" '%s' "$valor"; return; fi
+  read -r -s -p "  $texto: " valor || true; echo
+  printf -v "$nombre" '%s' "$(limpiar "${valor:-}")"
 }
 
 echo "Deja en blanco lo que todavia no tengas: se puede anadir despues al fichero .env"
@@ -114,9 +126,29 @@ sudo -u "$USUARIO_SISTEMA" env HOME="$DESTINO" npm ci --omit=dev --no-audit --no
 # ─── Fichero .env ─────────────────────────────────────────────────────────────
 paso "Configuracion del panel (.env)"
 
+# Anade una clave al .env si viene con valor y alli esta vacia. Asi, al volver
+# a ejecutar el instalador, se pueden completar las claves que quedaron en blanco
+# (tipicamente el whsec_... de Stripe, que solo existe tras crear el webhook).
+fijar_env() {
+  local clave="$1" valor="$2" actual
+  [ -n "$valor" ] || return 0
+  actual="$(sed -n "s/^$clave=//p" "$DESTINO/.env" | head -1)"
+  [ -z "$actual" ] || return 0
+  if grep -q "^$clave=" "$DESTINO/.env"; then
+    sed -i "s|^$clave=.*|$clave=$valor|" "$DESTINO/.env"
+  else
+    printf '%s=%s\n' "$clave" "$valor" >> "$DESTINO/.env"
+  fi
+  verde "  Anadido $clave"
+}
+
 if [ -f "$DESTINO/.env" ]; then
-  echo "  Ya existe $DESTINO/.env: se conserva tal cual."
-  echo "  (si cambias algo ahi, reinicia con: systemctl restart panel)"
+  echo "  Ya existe $DESTINO/.env: se conserva."
+  fijar_env STRIPE_SECRET_KEY "${STRIPE_SECRET_KEY:-}"
+  fijar_env STRIPE_WEBHOOK_SECRET "${STRIPE_WEBHOOK_SECRET:-}"
+  fijar_env TELEGRAM_BOT_TOKEN "${TELEGRAM_BOT_TOKEN:-}"
+  fijar_env TELEGRAM_ADMIN_CHAT_ID "${TELEGRAM_ADMIN_CHAT_ID:-}"
+  echo "  (si cambias algo a mano, reinicia con: systemctl restart panel)"
 else
   umask 077
   cat > "$DESTINO/.env" <<EOF
@@ -173,8 +205,18 @@ if [ -n "${DUCKDNS_TOKEN:-}" ]; then
     rojo "  No se pudo actualizar la IP. Revisa el subdominio y el token: journalctl -u duckdns"
   fi
 else
+  IP_PUBLICA="$(curl -sf --max-time 8 https://api.ipify.org 2>/dev/null || true)"
+  IP_DOMINIO="$(getent ahostsv4 "$DOMINIO" 2>/dev/null | awk '{print $1; exit}' || true)"
   echo "  Sin token: me salto la actualizacion automatica de IP."
-  echo "  (si tienes IP fija o un VPS, no hace falta)"
+  if [ -n "$IP_PUBLICA" ] && [ -n "$IP_DOMINIO" ] && [ "$IP_PUBLICA" != "$IP_DOMINIO" ]; then
+    rojo "  ATENCION: $DOMINIO apunta a $IP_DOMINIO y este servidor es $IP_PUBLICA."
+    rojo "  Mientras no coincidan, no se podra emitir el certificado HTTPS."
+    echo "  Arreglalo de una de estas dos formas:"
+    echo "    a) en duckdns.org, escribe $IP_PUBLICA en 'current ip' y pulsa 'update ip'"
+    echo "    b) vuelve a ejecutar este instalador y pega el token cuando te lo pida"
+  elif [ -n "$IP_PUBLICA" ] && [ "$IP_PUBLICA" = "$IP_DOMINIO" ]; then
+    verde "  $DOMINIO ya apunta a este servidor ($IP_PUBLICA)"
+  fi
 fi
 
 # ─── Servicio del panel ───────────────────────────────────────────────────────
@@ -200,16 +242,37 @@ fi
 # ─── Caddy (HTTPS) ────────────────────────────────────────────────────────────
 paso "Configurando HTTPS con Caddy"
 
-mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy 2>/dev/null || true
-sed "s|TU-SUBDOMINIO.duckdns.org|$DOMINIO|; s|tu-correo@ejemplo.com|$CORREO_TLS|; s|127.0.0.1:3000|127.0.0.1:$PUERTO|" \
-  "$DESTINO/deploy/Caddyfile" > /etc/caddy/Caddyfile
+mkdir -p /var/log/caddy /etc/caddy
+chown caddy:caddy /var/log/caddy 2>/dev/null || true
 
-if caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
-  systemctl enable caddy >/dev/null 2>&1 || true
-  systemctl restart caddy
-  verde "  Caddy configurado para $DOMINIO"
+NUEVO_CADDY="$(mktemp)"
+sed "s|TU-SUBDOMINIO.duckdns.org|$DOMINIO|; s|127.0.0.1:3000|127.0.0.1:$PUERTO|" \
+  "$DESTINO/deploy/Caddyfile" > "$NUEVO_CADDY"
+
+if [ -n "${CORREO_TLS:-}" ]; then
+  sed -i "s|tu-correo@ejemplo.com|$CORREO_TLS|" "$NUEVO_CADDY"
 else
-  abortar "El fichero /etc/caddy/Caddyfile no es valido."
+  # Sin correo se quita la linea entera: "tls" a secas no es valido, y el
+  # certificado se emite igual (solo se pierden los avisos de caducidad).
+  sed -i "/tu-correo@ejemplo.com/d" "$NUEVO_CADDY"
+fi
+
+if caddy validate --config "$NUEVO_CADDY" --adapter caddyfile >/dev/null 2>&1; then
+  install -m 644 "$NUEVO_CADDY" /etc/caddy/Caddyfile
+  rm -f "$NUEVO_CADDY"
+  systemctl enable caddy >/dev/null 2>&1 || true
+  if systemctl restart caddy; then
+    verde "  Caddy configurado para $DOMINIO"
+  else
+    rojo "  Caddy no arranca. Ultimas lineas del registro:"
+    journalctl -u caddy -n 20 --no-pager >&2 || true
+  fi
+else
+  rojo "  La configuracion de Caddy no es valida. Esto es lo que dice Caddy:"
+  caddy validate --config "$NUEVO_CADDY" --adapter caddyfile 2>&1 \
+    | grep -v '"level":"info"' | tail -5 >&2
+  echo "  (la configuracion anterior se ha dejado intacta: $NUEVO_CADDY)" >&2
+  abortar "No se ha podido configurar el HTTPS."
 fi
 
 # ─── Administrador ────────────────────────────────────────────────────────────
