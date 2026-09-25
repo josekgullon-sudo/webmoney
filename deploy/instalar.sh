@@ -120,6 +120,12 @@ fi
 mkdir -p "$DESTINO/data"
 chown -R "$USUARIO_SISTEMA:$USUARIO_SISTEMA" "$DESTINO"
 
+# Al pasar el directorio al usuario del servicio, git se niega a operar en el
+# como root ("dubious ownership"). Se autoriza para que `sudo git pull` funcione.
+if [ -d "$DESTINO/.git" ]; then
+  git config --global --add safe.directory "$DESTINO" 2>/dev/null || true
+fi
+
 echo "  Instalando dependencias de Node..."
 sudo -u "$USUARIO_SISTEMA" env HOME="$DESTINO" npm ci --omit=dev --no-audit --no-fund --prefix "$DESTINO" >/dev/null
 
