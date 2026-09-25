@@ -9,6 +9,22 @@ import db from '../lib/db.js';
 
 export const router = express.Router();
 
+// Los flujos SSE no se cierran solos: son conexiones abiertas a proposito.
+// Hay que tenerlos localizados para poder terminarlos al apagar el panel.
+const flujosAbiertos = new Set();
+
+/** Cierra los flujos en directo. El navegador reconecta solo al volver el panel. */
+export function cerrarFlujos() {
+  for (const res of flujosAbiertos) {
+    try {
+      res.end();
+    } catch {
+      /* si ya estaba cerrado, no hay nada que hacer */
+    }
+  }
+  flujosAbiertos.clear();
+}
+
 function scopeId(user) {
   return user.role === 'admin' ? null : user.id;
 }
@@ -32,11 +48,13 @@ router.get('/api/stream', requireAuth, (req, res) => {
   };
 
   panelEvents.on('panel', onEvent);
+  flujosAbiertos.add(res);
   const heartbeat = setInterval(() => res.write(': ping\n\n'), 25_000);
 
   req.on('close', () => {
     clearInterval(heartbeat);
     panelEvents.off('panel', onEvent);
+    flujosAbiertos.delete(res);
   });
 });
 

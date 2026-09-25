@@ -15,7 +15,7 @@ import stripeWebhook from './routes/webhook-stripe.js';
 import authRoutes from './routes/auth.js';
 import panelRoutes from './routes/panel.js';
 import adminRoutes from './routes/admin.js';
-import apiRoutes from './routes/api.js';
+import apiRoutes, { cerrarFlujos } from './routes/api.js';
 import { runDailyPayouts } from './services/payouts.js';
 
 export const app = express();
@@ -141,14 +141,30 @@ if (process.argv[1] && import.meta.url === `file://${path.resolve(process.argv[1
   });
   const scheduler = startScheduler();
 
+  let cerrando = false;
   const shutdown = (signal) => {
+    if (cerrando) return;
+    cerrando = true;
     logger.info('cerrando', { signal });
     scheduler?.stop();
+
+    // Sin esto el cierre se queda esperando a los flujos en directo, que por su
+    // naturaleza no terminan nunca: systemd acababa matando el proceso a los 10s.
+    cerrarFlujos();
+    server.closeIdleConnections?.();
+
     server.close(() => {
       db.close();
+      logger.info('cerrado correctamente');
       process.exit(0);
     });
-    setTimeout(() => process.exit(1), 10_000).unref();
+
+    // Las conexiones que sigan ocupadas pasado un momento se cortan.
+    setTimeout(() => server.closeAllConnections?.(), 2_000).unref();
+    setTimeout(() => {
+      logger.warn('cierre forzado: quedaban conexiones abiertas');
+      process.exit(1);
+    }, 10_000).unref();
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
