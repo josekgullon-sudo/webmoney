@@ -21,6 +21,22 @@ function claimEvent(eventId, type) {
   }
 }
 
+/**
+ * Comprueba que el evento trae de verdad el importe cobrado.
+ * Stripe permite configurar el destino con una carga util reducida que solo
+ * manda identificadores; en ese caso registrar el cobro daria un importe vacio,
+ * asi que es preferible no guardar nada y dejar constancia del motivo.
+ */
+function importeUtilizable(cents, event) {
+  if (Number.isInteger(cents) && cents > 0) return true;
+  logger.error(
+    'evento de Stripe sin importe: no se registra el cobro. Revisa que el destino del ' +
+      'webhook use la carga util completa (instantanea), no la reducida.',
+    { id: event.id, type: event.type, importe: cents }
+  );
+  return false;
+}
+
 /** Si el cobro llego sin usuario y este evento trae metadata util, se asigna ahora. */
 function backfillUser(payment, metadata) {
   if (payment.user_id) return null;
@@ -75,10 +91,11 @@ async function handleEvent(event) {
       if (object.payment_status !== 'paid') return;
       const objectId = typeof object.payment_intent === 'string' ? object.payment_intent : object.id;
       const metadata = object.metadata || {};
+      if (!importeUtilizable(object.amount_total, event)) return;
       const { created, payment, user } = recordPayment({
         objectId,
         eventId: event.id,
-        grossCents: object.amount_total ?? 0,
+        grossCents: object.amount_total,
         currency: object.currency || config.currency,
         description: object.description || 'Pago con Stripe Checkout',
         customerEmail: object.customer_details?.email || object.customer_email || null,
@@ -92,10 +109,12 @@ async function handleEvent(event) {
 
     case 'payment_intent.succeeded': {
       const metadata = object.metadata || {};
+      const importe = object.amount_received ?? object.amount;
+      if (!importeUtilizable(importe, event)) return;
       const { created, payment, user } = recordPayment({
         objectId: object.id,
         eventId: event.id,
-        grossCents: object.amount_received ?? object.amount ?? 0,
+        grossCents: importe,
         currency: object.currency || config.currency,
         description: object.description || 'Pago con Stripe',
         customerEmail: object.receipt_email || null,
