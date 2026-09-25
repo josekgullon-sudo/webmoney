@@ -75,8 +75,11 @@ if [ -n "$DOMINIO" ]; then
 fi
 
 titulo "Puertos de entrada"
-if command -v ss >/dev/null 2>&1; then
-  ESCUCHA="$(ss -tln 2>/dev/null)"
+ESCUCHA=""
+if command -v ss >/dev/null 2>&1; then ESCUCHA="$(ss -tln 2>/dev/null)"
+elif command -v netstat >/dev/null 2>&1; then ESCUCHA="$(netstat -tln 2>/dev/null)"
+fi
+if [ -n "$ESCUCHA" ]; then
   for PUERTO_WEB in 80 443; do
     if echo "$ESCUCHA" | grep -qE "(^|[^0-9.]):$PUERTO_WEB[[:space:]]"; then
       ok "Caddy escucha en el puerto $PUERTO_WEB de esta maquina"
@@ -84,6 +87,8 @@ if command -v ss >/dev/null 2>&1; then
       mal "Nadie escucha en el puerto $PUERTO_WEB (sudo systemctl status caddy)"
     fi
   done
+else
+  aviso "No puedo listar los puertos abiertos (instala iproute2 para verlo)"
 fi
 
 # El certificado solo se emite si Let's Encrypt logra entrar por el puerto 80
